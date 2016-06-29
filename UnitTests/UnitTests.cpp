@@ -47,6 +47,7 @@ static void testSelectClosestGhost()
    Entity g3(3, 10, 5, 0, 0, 0);
    Entity g4(4, 20, 5, 0, 0, 0);
 
+   g_ghosts.clear();
    g_ghosts.push_back(g1);
    g_ghosts.push_back(g2);
    g_ghosts.push_back(g3);
@@ -56,12 +57,64 @@ static void testSelectClosestGhost()
    assert(closestGhost.m_id == 1);
 }
 
+static void testCanStun()
+{
+   Entity b1(0, 0, 0, 0, 0, 0);
+
+   Entity e1(1, 4, 3, 0, 0, 0);
+   Entity e2(2, 100, 200, 0, 0, 0);
+   Entity e3(3, 5000, 5000, 0, 0, 0);
+
+   assert(canStun(b1, e1) == true);
+   assert(canStun(b1, e2) == true);
+   assert(canStun(b1, e3) == false);
+}
+
+static void testClosestEnnemy()
+{
+   Entity b1(0, 0, 0, 0, 0, 0);
+
+   Entity e1(1, 20, 10, 0, 0, 0);
+   Entity e2(2, 100, 200, 0, 0, 0);
+   Entity e3(3, 5000, 5000, 0, 0, 0);
+
+   g_ghosts.clear();
+   g_hisBusters.push_back(e1);
+   g_hisBusters.push_back(e2);
+   g_hisBusters.push_back(e3);
+
+   pair<bool, Entity> closestEnnemy = selectClosestEnnemy(b1);
+   assert(closestEnnemy.first == true);
+   assert(closestEnnemy.second.m_id == e1.m_id);
+}
+
+static void testClosestEnnemyWithGhost()
+{
+   Entity b1(0, 0, 0, 0, 0, 0);
+
+   Entity e1(1, 20, 10, 0, 0, 0);
+   Entity e2(2, 100, 200, 0, 1, 0);//carry ghost
+   Entity e3(3, 5000, 5000, 0, 0, 0);
+
+   g_ghosts.clear();
+   g_hisBusters.push_back(e1);
+   g_hisBusters.push_back(e2);
+   g_hisBusters.push_back(e3);
+
+   pair<bool, Entity> closestEnnemy = selectClosestEnnemyWithGhost(b1);
+   assert(closestEnnemy.first == true);
+   assert(closestEnnemy.second.m_id == e2.m_id);
+}
+
 int main()
 {
    testComputeDistance();
    testSelectClosestGhost();
    testComputeDistanceFromBase();
    testCanRelease();
+   testCanStun();
+   testClosestEnnemy();
+   testClosestEnnemyWithGhost();
 	return 0;
 }
 
