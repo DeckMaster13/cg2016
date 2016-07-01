@@ -106,6 +106,77 @@ static void testClosestEnnemyWithGhost()
    assert(closestEnnemy.second.m_id == e2.m_id);
 }
 
+static void testComputeNewPositionIfMoveToward()
+{
+   Entity b1(1, 0, 0, 0, 0, 0);
+
+   pair<int, int> destination1(1500, 0);
+   assert(computeNewPositionIfMoveToward(b1, destination1) == make_pair(800, 0));
+
+   pair<int, int> destination2(0, 1500);
+   assert(computeNewPositionIfMoveToward(b1, destination2) == make_pair(0, 800));
+
+   pair<int, int> destination3(400, 400);
+   assert(computeNewPositionIfMoveToward(b1, destination3) == make_pair(565, 565));
+
+   pair<int, int> destination4(300, 400);
+   assert(computeNewPositionIfMoveToward(b1, destination4).first < computeNewPositionIfMoveToward(b1, destination4).second);
+
+   Entity b2(1, 9000, 9000, 0, 0, 0);
+
+   pair<int, int> destination5(0, 0);
+   assert(computeNewPositionIfMoveToward(b2, destination5) == make_pair(8434, 8434));
+}
+
+static void testCanCatchBeforeRelease()
+{
+   Entity b1(0, 0, 0, 0, 0, 0);
+   Entity e1(1, 400, 400, 0, 0, 0);
+   Entity e2(2, 800, 800, 0, 0, 0);
+   Entity e3(2, 3000, 3000, 0, 0, 0);
+   g_ennemyBasePeripheryCoord.first = 14350;
+   g_ennemyBasePeripheryCoord.second = 7350;
+   g_ennemyBaseCoord.first = 16000;
+   g_ennemyBaseCoord.second= 9000;
+   assert(canCatchBeforeRelease(b1, e1) > 0);
+   assert(canCatchBeforeRelease(b1, e2) > 0);
+   assert(canCatchBeforeRelease(b1, e3) == 0);
+
+   //real buggy test
+   Entity b2(42, 7577, 2202, 0, 0, 0);
+   Entity e4(43, 8833, 4052, 0, 0, 0);
+   assert(canCatchBeforeRelease(b2, e4) == 0);
+
+   g_ennemyBasePeripheryCoord.first = 1650;
+   g_ennemyBasePeripheryCoord.second = 1650;
+   g_ennemyBaseCoord.first = 0;
+   g_ennemyBaseCoord.second = 0;
+   Entity b3(43, 6400, 3275, 0, 0, 0);
+   Entity e5(44, 14680, 6200, 0, 0, 0);
+   assert(canCatchBeforeRelease(b3, e5) > 0);
+}
+
+static void testPositionValid()
+{
+   pair<int, int> pos(16000,9000);
+   assert(isPositionValid(pos) == true);
+
+   pos = make_pair(0,0);
+   assert(isPositionValid(pos) == true);
+
+   pos = make_pair(9000, 4000);
+   assert(isPositionValid(pos) == true);
+
+   pos = make_pair(200, 6584);
+   assert(isPositionValid(pos) == true);
+
+   pos = make_pair(10000, 15000);
+   assert(isPositionValid(pos) == false);
+
+   pos = make_pair(20000, 2000);
+   assert(isPositionValid(pos) == false);
+}
+
 int main()
 {
    testComputeDistance();
@@ -115,6 +186,8 @@ int main()
    testCanStun();
    testClosestEnnemy();
    testClosestEnnemyWithGhost();
+   testComputeNewPositionIfMoveToward();
+   testCanCatchBeforeRelease();
 	return 0;
 }
 
