@@ -130,30 +130,35 @@ static void testComputeNewPositionIfMoveToward()
 
 static void testCanCatchBeforeRelease()
 {
+   pair<int, int> targetPos;
    Entity b1(0, 0, 0, 0, 0, 0);
    Entity e1(1, 400, 400, 0, 0, 0);
-   Entity e2(2, 800, 800, 0, 0, 0);
-   Entity e3(2, 3000, 3000, 0, 0, 0);
+   Entity e2(2, 560, 560, 0, 0, 0);
+   Entity e3(2, 600, 600, 0, 0, 0);
+   Entity e4(2, 3000, 3000, 0, 0, 0);
+   Entity e7(2, 1130, 1130, 0, 0, 0);//limit stun range
    g_ennemyBasePeripheryCoord.first = 14350;
    g_ennemyBasePeripheryCoord.second = 7350;
    g_ennemyBaseCoord.first = 16000;
    g_ennemyBaseCoord.second= 9000;
-   assert(canCatchBeforeRelease(b1, e1) > 0);
-   assert(canCatchBeforeRelease(b1, e2) > 0);
-   assert(canCatchBeforeRelease(b1, e3) == 0);
+   assert(canCatchBeforeRelease(b1, e1, targetPos) > 0);
+   assert(canCatchBeforeRelease(b1, e2, targetPos) > 0);
+   assert(canCatchBeforeRelease(b1, e3, targetPos) > 0);
+   assert(canCatchBeforeRelease(b1, e4, targetPos) == 0);
+   assert(canCatchBeforeRelease(b1, e7, targetPos) > 0);
 
    //real buggy test
    Entity b2(42, 7577, 2202, 0, 0, 0);
-   Entity e4(43, 8833, 4052, 0, 0, 0);
-   assert(canCatchBeforeRelease(b2, e4) == 0);
+   Entity e5(43, 8833, 4052, 0, 0, 0);
+   assert(canCatchBeforeRelease(b2, e5, targetPos) == 0);
 
    g_ennemyBasePeripheryCoord.first = 1650;
    g_ennemyBasePeripheryCoord.second = 1650;
    g_ennemyBaseCoord.first = 0;
    g_ennemyBaseCoord.second = 0;
    Entity b3(43, 6400, 3275, 0, 0, 0);
-   Entity e5(44, 14680, 6200, 0, 0, 0);
-   assert(canCatchBeforeRelease(b3, e5) > 0);
+   Entity e6(44, 14680, 6200, 0, 0, 0);
+   assert(canCatchBeforeRelease(b3, e6, targetPos) > 0);
 }
 
 static void testPositionValid()
