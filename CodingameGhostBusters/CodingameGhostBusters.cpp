@@ -348,12 +348,12 @@ static void readGameSettings()
       }
    }
    //(sqrt(2)-1)/(sqrt(2))*R
-   g_lastResortExplorableTiles.push_back(ExplorableTile(2200, 6800));
-   g_lastResortExplorableTiles.push_back(ExplorableTile(2200, 6800));
+   g_lastResortExplorableTiles.push_back(ExplorableTile(6600, 6800));
+   //g_lastResortExplorableTiles.push_back(ExplorableTile(2200, 6800));
    g_lastResortExplorableTiles.push_back(ExplorableTile(1555, 7445));
 
    g_lastResortExplorableTiles.push_back(ExplorableTile(9400, 2200));
-   g_lastResortExplorableTiles.push_back(ExplorableTile(13800, 2200));
+   //g_lastResortExplorableTiles.push_back(ExplorableTile(13800, 2200));
    g_lastResortExplorableTiles.push_back(ExplorableTile(14445, 1555));
 
    for (int i = 0; i < g_bustersPerPlayer; ++i)
@@ -393,6 +393,30 @@ static void readOneTurn()
          if (g_myTeamId == 0)
          {
             g_myBusters.push_back(Entity(entityId, x, y, entityType, state, value));
+            if (!g_lastResortExploration)
+            {
+               for (auto explorableTile : g_explorableTiles)
+               {
+                  if (computeDistance(g_myBusters.back(), explorableTile.m_x, explorableTile.m_y) <= 300)
+                  {
+                     explorableTile.m_explored = true;
+                     g_explorableTiles.erase(std::remove(g_explorableTiles.begin(), g_explorableTiles.end(), explorableTile), g_explorableTiles.end());
+                     //               g_explorableTiles.erase(explorableTile);
+                  }
+               }
+            }
+            else
+            {
+               for (auto explorableTile : g_lastResortExplorableTiles)
+               {
+
+                  if (computeDistance(g_myBusters.back(), explorableTile.m_x, explorableTile.m_y) <= 10)
+                  {
+                     explorableTile.m_explored = true;
+                     g_lastResortExplorableTiles.erase(std::remove(g_lastResortExplorableTiles.begin(), g_lastResortExplorableTiles.end(), explorableTile), g_lastResortExplorableTiles.end());
+                  }
+               }
+            }
          }
          else
          {
@@ -403,32 +427,36 @@ static void readOneTurn()
                g_ennemiesWithGhosts.push_back(ennemy);
             }
          }
-         for (auto explorableTile : g_explorableTiles)
-         {
-            if (computeDistance(g_entities.back(), explorableTile.m_x, explorableTile.m_y) <= 300)
-            {
-               explorableTile.m_explored = true;
-               g_explorableTiles.erase(std::remove(g_explorableTiles.begin(), g_explorableTiles.end(), explorableTile), g_explorableTiles.end());
-               //               g_explorableTiles.erase(explorableTile);
-            }
-         }
-         if (g_lastResortExploration)
-         {
-            for (auto explorableTile : g_lastResortExplorableTiles)
-            {
-
-               if (computeDistance(g_entities.back(), explorableTile.m_x, explorableTile.m_y) <= 1)
-               {
-                  explorableTile.m_explored = true;
-                  g_lastResortExplorableTiles.erase(std::remove(g_lastResortExplorableTiles.begin(), g_lastResortExplorableTiles.end(), explorableTile), g_lastResortExplorableTiles.end());
-               }
-            }
-         }
+        
          break;
       case 1:
          if (g_myTeamId == 1)
          {
             g_myBusters.push_back(Entity(entityId, x, y, entityType, state, value));
+            if (!g_lastResortExploration)
+            {
+               for (auto explorableTile : g_explorableTiles)
+               {
+                  if (computeDistance(g_myBusters.back(), explorableTile.m_x, explorableTile.m_y) <= 300)
+                  {
+                     explorableTile.m_explored = true;
+                     g_explorableTiles.erase(std::remove(g_explorableTiles.begin(), g_explorableTiles.end(), explorableTile), g_explorableTiles.end());
+                     //               g_explorableTiles.erase(explorableTile);
+                  }
+               }
+            }
+            else
+            {
+               for (auto explorableTile : g_lastResortExplorableTiles)
+               {
+
+                  if (computeDistance(g_myBusters.back(), explorableTile.m_x, explorableTile.m_y) <= 10)
+                  {
+                     explorableTile.m_explored = true;
+                     g_lastResortExplorableTiles.erase(std::remove(g_lastResortExplorableTiles.begin(), g_lastResortExplorableTiles.end(), explorableTile), g_lastResortExplorableTiles.end());
+                  }
+               }
+            }
          }
          else
          {
@@ -437,27 +465,6 @@ static void readOneTurn()
             if (hasGhost(ennemy))
             {
                g_ennemiesWithGhosts.push_back(ennemy);
-            }
-         }
-         for (auto explorableTile : g_explorableTiles)
-         {
-            if (computeDistance(g_entities.back(), explorableTile.m_x, explorableTile.m_y) <= 300)
-            {
-               explorableTile.m_explored = true;
-               g_explorableTiles.erase(std::remove(g_explorableTiles.begin(), g_explorableTiles.end(), explorableTile), g_explorableTiles.end());
-               //               g_explorableTiles.erase(explorableTile);
-            }
-         }
-         if (g_explorableTiles.empty())
-         {
-            for (auto explorableTile : g_lastResortExplorableTiles)
-            {
-
-               if (computeDistance(g_entities.back(), explorableTile.m_x, explorableTile.m_y) <= 1)
-               {
-                  explorableTile.m_explored = true;
-                  g_lastResortExplorableTiles.erase(std::remove(g_lastResortExplorableTiles.begin(), g_lastResortExplorableTiles.end(), explorableTile), g_lastResortExplorableTiles.end());
-               }
             }
          }
          break;
@@ -490,9 +497,9 @@ static void doMove(int x, int y, const std::string& text = "")
    cout << "MOVE " << x << " " << y << " " << text << endl;
 }
 
-static void doBust(int ghostId)
+static void doBust(int ghostId, const std::string& text = "")
 {
-   cout << "BUST " << ghostId << endl;
+   cout << "BUST " << ghostId << " " << text << endl;
 }
 
 static void doStun(int busterId, const std::string& text)
@@ -622,14 +629,14 @@ static bool handleTrackEnnemyWithGhostSituation(Entity& myBuster)
       const Entity& ennemy = g_visibleEntities[ennemyId];
       if (ennemy.m_id != -1 && canStun(myBuster, ennemy))
       {
-         doStun(ennemy.m_id, "STUN T");
+         doStun(ennemy.m_id, "Got ya");
          g_assignedEnnemies[myBuster.m_rank] = -1;//TRACK COMPLETE
          g_assignedEnnemiesTargetPos[myBuster.m_rank] = make_pair(0, 0);//USELESS
       }
       else
       {
          pair<int, int> targetPos = g_assignedEnnemiesTargetPos[myBuster.m_rank];
-         doMove(targetPos.first, targetPos.second, "TRACK");
+         doMove(targetPos.first, targetPos.second, "Leave the dead alone !");
       }
       return true;
    }
@@ -646,7 +653,7 @@ static bool handleCarryGhostSituation(Entity& myBuster)
       }
       else
       {
-         doMove(g_myBaseCoord.first, g_myBaseCoord.second, "CARRY");
+         doMove(g_myBaseCoord.first, g_myBaseCoord.second, "It's super GREEEN !");
       }
       return true;
    }
@@ -662,7 +669,7 @@ static bool handleEnnemyCloseWithGhostSituation(Entity& myBuster)
       if (canStun(myBuster, closestEnnemy.second))
       {
          g_stunReloadTimes[myBuster.m_rank] = 20;
-         doStun(closestEnnemy.second.m_id, "STUN G");
+         doStun(closestEnnemy.second.m_id, "This is mine");
          return true;
       }
    }
@@ -677,7 +684,7 @@ static bool handleEnnemyCloseSituation(Entity& myBuster)
       if (canStun(myBuster, closestEnnemy.second))
       {
          g_stunReloadTimes[myBuster.m_rank] = 20;
-         doStun(closestEnnemy.second.m_id, "STUN C");
+         doStun(closestEnnemy.second.m_id, "Too close");
          return true;
       }
    }
@@ -689,7 +696,7 @@ static void searchGhosts(const Entity& myBuster)
    pair<int, int> tilePos = selectClosestUnexploredTile(myBuster, g_explorableTiles);
    if (tilePos.first != 0 && tilePos.second != 0)
    {
-      doMove(tilePos.first, tilePos.second, "SEARCH");
+      doMove(tilePos.first, tilePos.second, "I need a chat");
       return;
    }
 
@@ -697,12 +704,12 @@ static void searchGhosts(const Entity& myBuster)
    if (tilePos.first != 0 && tilePos.second != 0)
    {
       g_lastResortExploration = true;
-      doMove(tilePos.first, tilePos.second, "SEARCH2");
+      doMove(tilePos.first, tilePos.second, "...");
       return;
    }
 
    tilePos = make_pair(abs(2000 - g_ennemyBaseCoord.first), abs(2000 - g_ennemyBaseCoord.second));
-   doMove(tilePos.first, tilePos.second, "NO MORE SEARCH");
+   doMove(tilePos.first, tilePos.second, "Waiting for death");
    return;
 }
 
@@ -727,7 +734,7 @@ static bool handleGhostCloseSituation(Entity& myBuster)
    const Entity& bestGhost = selectBestGhost(myBuster);
    if (canBust(myBuster, bestGhost))
    {
-      doBust(bestGhost.m_id);
+      doBust(bestGhost.m_id, "They talk to me");
    }
    else if (computeDistance(myBuster, bestGhost) <= 900)
    {
@@ -735,7 +742,7 @@ static bool handleGhostCloseSituation(Entity& myBuster)
    }
    else
    {
-      doMove(bestGhost.m_x, bestGhost.m_y, "FOUND");
+      doMove(bestGhost.m_x, bestGhost.m_y, "I see dead people");
    }
    return true;
 }
@@ -766,7 +773,7 @@ static void playOneTurn()
 
       // Write an action using cout. DON'T FORGET THE "<< endl"
       // To debug: cerr << "Debug messages..." << endl;
-      if (false)//i == 0 && g_explorableTiles.size() != 0)
+      if (false)//i == 0 && g_lastResortExploration == false)
       {
          scoutPlayOneTurn(g_myBusters[i]);
       }
