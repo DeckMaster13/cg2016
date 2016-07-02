@@ -343,7 +343,7 @@ static void fillTrackingVector()
             cerr << "BUSTER COULD TRACK" << endl;
             pair<int, int> targetPos;
             int currentDistance = canCatchBeforeRelease(buster, ennemy, targetPos);
-            if (currentDistance != 0 && currentDistance < minDistance)
+            if (!hasGhost(buster) && currentDistance != 0 && currentDistance < minDistance)
             {
                cerr << "BUSTER CAN TRACK, ENNEMY: " << ennemy.m_id << endl;
                minDistance = currentDistance;
@@ -703,8 +703,13 @@ static bool handleTrackEnnemyWithGhostSituation(Entity& myBuster)
    int ennemyId = g_assignedEnnemies[myBuster.m_rank];//potentially not visible anymore
    if (ennemyId >= 0)
    {
-      if (isStun(myBuster)) return false;
-
+      if (isStun(myBuster))
+      {
+         g_assignedEnnemies[myBuster.m_rank] = -1;//TRACK ABANDONNED
+         g_assignedEnnemiesTargetPos[myBuster.m_rank] = make_pair(0, 0);//USELESS
+         return false;
+      }
+      
       //if visible
       if (g_visibleEnnemies.find(ennemyId) != g_visibleEnnemies.end())
       {
@@ -721,8 +726,14 @@ static bool handleTrackEnnemyWithGhostSituation(Entity& myBuster)
          }
       }
       
-      //move toward direction
       pair<int, int> targetPos = g_assignedEnnemiesTargetPos[myBuster.m_rank];
+      //if we reach the destination and we cannot see him, we change it
+      if (computeDistance(myBuster, targetPos.first, targetPos.second) <= 10)
+      {
+         g_assignedEnnemiesTargetPos[myBuster.m_rank] = g_ennemyBasePeripheryCoord;
+      }
+
+      //move toward direction
       doMove(targetPos.first, targetPos.second, "Leave the dead alone !");
       myBuster.m_isScout = false;
       return true;
@@ -896,9 +907,10 @@ static void busterPlayOneTurn(Entity& myBuster)
 {
    print(myBuster, false);
    bool done = false;
-   done = handleCarryGhostSituation(myBuster);
-   done = done || handleTrackEnnemyWithGhostSituation(myBuster);
+
+   done = handleTrackEnnemyWithGhostSituation(myBuster);
    done = done || handleEnnemyCloseSituation(myBuster);
+   done = done || handleCarryGhostSituation(myBuster);
    done = done || handleGhostHistoricSituation(myBuster);
    done = done || handleCantSeeGhostSituation(myBuster);
    done = done || handleGhostCloseSituation(myBuster);//useless
