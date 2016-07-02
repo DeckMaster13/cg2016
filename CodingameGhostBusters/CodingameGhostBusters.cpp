@@ -343,7 +343,7 @@ static void fillTrackingVector()
             cerr << "BUSTER COULD TRACK" << endl;
             pair<int, int> targetPos;
             int currentDistance = canCatchBeforeRelease(buster, ennemy, targetPos);
-            if (!hasGhost(buster) && currentDistance != 0 && currentDistance < minDistance)
+            if (currentDistance != 0 && currentDistance < minDistance)
             {
                cerr << "BUSTER CAN TRACK, ENNEMY: " << ennemy.m_id << endl;
                minDistance = currentDistance;
@@ -440,29 +440,29 @@ static void fillMyBustersAndUpdateExplorableTiles(const Entity& myBuster)
    g_myBusters.push_back(myBuster);
    //if (!g_lastResortExploration)
    //{
-      for (auto explorableTile : g_explorableTiles)
+   for (auto explorableTile : g_explorableTiles)
+   {
+      int distanceToTileCenter = computeDistance(myBuster, explorableTile.m_x, explorableTile.m_y);
+      cerr << "buster: " << myBuster.m_id << "distanceToTileCenter: " << distanceToTileCenter << endl;
+      if (distanceToTileCenter <= 300)
       {
-         int distanceToTileCenter = computeDistance(myBuster, explorableTile.m_x, explorableTile.m_y);
-         cerr << "buster: " << myBuster.m_id << "distanceToTileCenter: " << distanceToTileCenter << endl;
-         if (distanceToTileCenter <= 300)
-         {
-            explorableTile.m_explored = true;
-            g_explorableTiles.erase(std::remove(g_explorableTiles.begin(), g_explorableTiles.end(), explorableTile), g_explorableTiles.end());
-            //               g_explorableTiles.erase(explorableTile);
-         }
+         explorableTile.m_explored = true;
+         g_explorableTiles.erase(std::remove(g_explorableTiles.begin(), g_explorableTiles.end(), explorableTile), g_explorableTiles.end());
+         //               g_explorableTiles.erase(explorableTile);
       }
+   }
    //}
    //else
    //{
-      for (auto explorableTile : g_lastResortExplorableTiles)
-      {
+   for (auto explorableTile : g_lastResortExplorableTiles)
+   {
 
-         if (computeDistance(g_myBusters.back(), explorableTile.m_x, explorableTile.m_y) <= 10)
-         {
-            explorableTile.m_explored = true;
-            g_lastResortExplorableTiles.erase(std::remove(g_lastResortExplorableTiles.begin(), g_lastResortExplorableTiles.end(), explorableTile), g_lastResortExplorableTiles.end());
-         }
+      if (computeDistance(g_myBusters.back(), explorableTile.m_x, explorableTile.m_y) <= 10)
+      {
+         explorableTile.m_explored = true;
+         g_lastResortExplorableTiles.erase(std::remove(g_lastResortExplorableTiles.begin(), g_lastResortExplorableTiles.end(), explorableTile), g_lastResortExplorableTiles.end());
       }
+   }
    //}
 }
 
@@ -494,7 +494,7 @@ static void readOneTurn()
          g_ghosts.push_back(ghost);
          g_lastGhostsStatus[ghost.m_id] = ghost;
       }
-         break;
+      break;
       case 0:
       {
          if (g_myTeamId == 0)
@@ -513,7 +513,7 @@ static void readOneTurn()
             }
          }
       }
-         break;
+      break;
       case 1:
       {
          if (g_myTeamId == 1)
@@ -532,7 +532,7 @@ static void readOneTurn()
             }
          }
       }
-         break;
+      break;
       default:
          throw;//err
          break;
@@ -647,7 +647,7 @@ static pair<bool, Entity> selectClosestEnnemyWithGhost(const Entity& buster)
 static pair<int, int> selectClosestUnexploredTile(const Entity& entity, const std::vector<ExplorableTile>& tilesToExplore)
 {
    int minDistance = 32000;
-   pair<int, int> tilePos(0,0);
+   pair<int, int> tilePos(0, 0);
    for (auto currentTile : tilesToExplore)
    {
       int currentDistance = computeDistance(entity, currentTile.m_x, currentTile.m_y);
@@ -703,13 +703,8 @@ static bool handleTrackEnnemyWithGhostSituation(Entity& myBuster)
    int ennemyId = g_assignedEnnemies[myBuster.m_rank];//potentially not visible anymore
    if (ennemyId >= 0)
    {
-      if (isStun(myBuster))
-      {
-         g_assignedEnnemies[myBuster.m_rank] = -1;//TRACK ABANDONNED
-         g_assignedEnnemiesTargetPos[myBuster.m_rank] = make_pair(0, 0);//USELESS
-         return false;
-      }
-      
+      if (isStun(myBuster)) return false;
+
       //if visible
       if (g_visibleEnnemies.find(ennemyId) != g_visibleEnnemies.end())
       {
@@ -725,7 +720,7 @@ static bool handleTrackEnnemyWithGhostSituation(Entity& myBuster)
             return true;
          }
       }
-      
+
       pair<int, int> targetPos = g_assignedEnnemiesTargetPos[myBuster.m_rank];
       //if we reach the destination and we cannot see him, we change it
       if (computeDistance(myBuster, targetPos.first, targetPos.second) <= 10)
@@ -832,7 +827,7 @@ static bool handleGhostHistoricSituation(Entity& myBuster)
 {
    const Entity& bestGhostFromHistoric = selectBestGhostAccordingToHistoric(myBuster);
    if (bestGhostFromHistoric.m_id == -1) return false;
-   
+
    bool canSeeHim = isGhostVisible(bestGhostFromHistoric);
 
    if (canSeeHim)
@@ -851,7 +846,7 @@ static bool handleGhostHistoricSituation(Entity& myBuster)
 
          while (!solved)
          {
-            pair<int,int> newPos = computeNewPositionIfMoveToward(myBuster, g_myBaseCoord, step);
+            pair<int, int> newPos = computeNewPositionIfMoveToward(myBuster, g_myBaseCoord, step);
             updatedBuster.m_x = newPos.first;
             updatedBuster.m_y = newPos.second;
 
@@ -907,10 +902,9 @@ static void busterPlayOneTurn(Entity& myBuster)
 {
    print(myBuster, false);
    bool done = false;
-
-   done = handleTrackEnnemyWithGhostSituation(myBuster);
+   done = handleCarryGhostSituation(myBuster);
+   done = done || handleTrackEnnemyWithGhostSituation(myBuster);
    done = done || handleEnnemyCloseSituation(myBuster);
-   done = done || handleCarryGhostSituation(myBuster);
    done = done || handleGhostHistoricSituation(myBuster);
    done = done || handleCantSeeGhostSituation(myBuster);
    done = done || handleGhostCloseSituation(myBuster);//useless
@@ -918,7 +912,7 @@ static void busterPlayOneTurn(Entity& myBuster)
 
 static bool handleGhostWithNoEndurance(Entity& scout)
 {
-   for (auto& ghost: g_ghosts)
+   for (auto& ghost : g_ghosts)
    {
       if (!isTrackingEnnemy(scout) && ghost.m_state <= 3 && canBust(scout, ghost))
       {
