@@ -123,6 +123,12 @@ static void printAssignedEnnemies()
       cerr << "AssignedEnnemy: " << v.first << " > " << v.second << endl;
 }
 
+static void printUnexploredTile()
+{
+   for (auto& v : g_explorableTiles)
+      cerr << "ExplorableTile: " << v.m_x << "," << v.m_y << "," << v.m_explored << endl;
+}
+
 static void print(const Entity& e, bool enabled)
 {
    if (!enabled) return;
@@ -432,12 +438,12 @@ static void readGameSettings()
 static void fillMyBustersAndUpdateExplorableTiles(const Entity& myBuster)
 {
    g_myBusters.push_back(myBuster);
-   if (!g_lastResortExploration)
-   {
+   //if (!g_lastResortExploration)
+   //{
       for (auto explorableTile : g_explorableTiles)
       {
          int distanceToTileCenter = computeDistance(myBuster, explorableTile.m_x, explorableTile.m_y);
-         //cerr << "buster: " << myBuster.m_id << "distanceToTileCenter: " << distanceToTileCenter << endl;
+         cerr << "buster: " << myBuster.m_id << "distanceToTileCenter: " << distanceToTileCenter << endl;
          if (distanceToTileCenter <= 300)
          {
             explorableTile.m_explored = true;
@@ -445,9 +451,9 @@ static void fillMyBustersAndUpdateExplorableTiles(const Entity& myBuster)
             //               g_explorableTiles.erase(explorableTile);
          }
       }
-   }
-   else
-   {
+   //}
+   //else
+   //{
       for (auto explorableTile : g_lastResortExplorableTiles)
       {
 
@@ -457,7 +463,7 @@ static void fillMyBustersAndUpdateExplorableTiles(const Entity& myBuster)
             g_lastResortExplorableTiles.erase(std::remove(g_lastResortExplorableTiles.begin(), g_lastResortExplorableTiles.end(), explorableTile), g_lastResortExplorableTiles.end());
          }
       }
-   }
+   //}
 }
 
 static void readOneTurn()
@@ -553,6 +559,7 @@ static void readOneTurn()
    printEnnemiesWithGhost();
    printVisibleGhosts();
    printLastGhostStatus();
+   printUnexploredTile();
    //printAssignedEnnemies();
    //updateTrackingVector();//USELESS
 }
@@ -915,6 +922,7 @@ static void scoutPlayOneTurn(Entity& scout)
    bool done = false;
    done = handleCarryGhostSituation(scout);
    done = done || handleTrackEnnemyWithGhostSituation(scout);
+   done = done || handleEnnemyCloseSituation(scout);
    done = done || handleGhostWithNoEndurance(scout);
    done = done || handleScoutingSituation(scout);
    //done = done || handleGhostCloseSituation(scout);
@@ -951,13 +959,14 @@ static void playOneTurn()
       // To debug: cerr << "Debug messages..." << endl;
       if (g_currentTurn < 8)
       {
+         //OPENING
          if (g_myBaseCoord.first == 0 && g_myBaseCoord.second == 0)
          {
-            doMove(g_myBusters[i].m_x + 565 * 8, g_myBusters[i].m_x + 565 * 8, ":(");
+            doMove(g_myBusters[i].m_x + 1000 * 8, g_myBusters[i].m_y + 300 * 8, ":(");
          }
          else
          {
-            doMove(g_myBusters[i].m_x - 565 * 8, g_myBusters[i].m_x - 565 * 8, ":(");
+            doMove(g_myBusters[i].m_x - 1000 * 8, g_myBusters[i].m_y - 300 * 8, ":(");
          }
       }
       else if (g_myBusters[i].m_isScout && g_lastResortExploration == false)
