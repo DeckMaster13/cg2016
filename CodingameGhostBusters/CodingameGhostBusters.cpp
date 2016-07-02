@@ -97,6 +97,7 @@ static map<int, int>            g_assignedEnnemies;
 static map<int, pair<int, int>> g_assignedEnnemiesTargetPos;
 static map<int, Entity>         g_lastGhostsStatus;
 static map<int, Entity>         g_visibleEnnemies;
+static int                      g_currentTurn{ 0 };
 
 static void printEnnemiesWithGhost()
 {
@@ -190,6 +191,29 @@ static bool isBusting(const Entity& buster)
    return buster.m_state == 3;
 }
 
+static Entity selectClosestGhost(const Entity& buster)
+{
+   int minDistance = 32000;//should be > max
+   Entity closestGhost;
+   closestGhost.m_id = -1;
+   for (auto ghost : g_ghosts)
+   {
+      int currentDistance = computeDistance(buster, ghost);
+      if (currentDistance < minDistance)
+      {
+         minDistance = currentDistance;
+         closestGhost = ghost;
+      }
+   }
+   return closestGhost;
+}
+
+static bool isBustingHighEnduranceGhost(const Entity& buster)
+{
+   Entity closestGhost = selectClosestGhost(buster);
+   return isBusting(buster) && closestGhost.m_state > 5;
+}
+
 static bool isGhostCaptured(const Entity& ghost)
 {
    for (auto id : g_idsOfCapturedGhosts)
@@ -211,7 +235,11 @@ static bool hasStunUp(const Entity& buster)
 
 static bool canStun(const Entity& buster, const Entity& ennemy)
 {
-   return !isStun(ennemy) && buster.m_reloadTime <= 0 && computeDistance(buster, ennemy) <= 1760;//optim ? do not stun already stun guy //optim: do not stun capturing guy
+   if (isBustingHighEnduranceGhost(ennemy))
+   {
+      return false;
+   }
+   return !isStun(ennemy) && buster.m_reloadTime <= 0 && computeDistance(buster, ennemy) <= 1760;
 }
 
 static bool canBust(const Entity& buster, const Entity& ghost)
@@ -237,7 +265,7 @@ static int sign(int expr)
    return  expr != 0 ? expr / abs(expr) : 0;
 }
 
-static pair<int, int> computeNewPositionIfMoveToward(const Entity& entity, pair<int, int> destination)
+static pair<int, int> computeNewPositionIfMoveToward(const Entity& entity, pair<int, int> destination, int step = 800)
 {
    if (destination.second - entity.m_y == 0 && destination.first - entity.m_x == 0)
    {
@@ -245,12 +273,12 @@ static pair<int, int> computeNewPositionIfMoveToward(const Entity& entity, pair<
    }
    else if (destination.second - entity.m_y == 0)
    {
-      return make_pair(entity.m_x + 800 * (destination.first - entity.m_x) / abs(destination.first - entity.m_x), entity.m_y);
+      return make_pair(entity.m_x + step * (destination.first - entity.m_x) / abs(destination.first - entity.m_x), entity.m_y);
    }
 
    int r = (destination.first - entity.m_x) / (destination.second - entity.m_y);
-   int x = entity.m_x + sign(destination.first - entity.m_x) * 800 * r / (sqrt(1 + pow(r, 2)));
-   int y = entity.m_y + sign(destination.second - entity.m_y) * 800 * 1 / (sqrt(1 + pow(r, 2)));
+   int x = entity.m_x + sign(destination.first - entity.m_x) * step * r / (sqrt(1 + pow(r, 2)));
+   int y = entity.m_y + sign(destination.second - entity.m_y) * step * 1 / (sqrt(1 + pow(r, 2)));
    return make_pair(x, y);
 }
 
@@ -260,17 +288,14 @@ static int canCatchBeforeRelease(const Entity& buster, const Entity& ennemy, pai
 {
    std::vector< pair<int, int> > ennemyPositions;
    Entity copiedEnnemy(ennemy);
-   while (!canEnnemyRelease(copiedEnnemy))
+   pair<int, int> ennemyPosition(ennemy.m_x, ennemy.m_y);
+   while (!canEnnemyRelease(copiedEnnemy) && isPositionValid(ennemyPosition))
    {
-      pair<int, int> ennemyPosition = computeNewPositionIfMoveToward(copiedEnnemy, g_ennemyBaseCoord);
+      ennemyPositions.push_back(ennemyPosition);
+
+      ennemyPosition = computeNewPositionIfMoveToward(copiedEnnemy, g_ennemyBaseCoord);
       copiedEnnemy.m_x = ennemyPosition.first;
       copiedEnnemy.m_y = ennemyPosition.second;
-
-      if (!isPositionValid(ennemyPosition))
-      {
-         break;
-      }
-      ennemyPositions.push_back(ennemyPosition);
    }
 
    if (canStun(buster, ennemy))
@@ -437,6 +462,7 @@ static void fillMyBustersAndUpdateExplorableTiles(const Entity& myBuster)
 
 static void readOneTurn()
 {
+   g_currentTurn++;
    cin >> g_entitiesCount; cin.ignore();
    for (int i = 0; i < g_entitiesCount; i++) {
       int entityId; // buster id or ghost id
@@ -627,23 +653,6 @@ static pair<int, int> selectClosestUnexploredTile(const Entity& entity, const st
    return tilePos;
 }
 
-static Entity selectClosestGhost(const Entity& buster)
-{
-   int minDistance = 32000;//should be > max
-   Entity closestGhost;
-   closestGhost.m_id = -1;
-   for (auto ghost : g_ghosts)
-   {
-      int currentDistance = computeDistance(buster, ghost);
-      if (currentDistance < minDistance)
-      {
-         minDistance = currentDistance;
-         closestGhost = ghost;
-      }
-   }
-   return closestGhost;
-}
-
 static Entity selectBestGhostAccordingToHistoric(const Entity& buster)
 {
    int maxScore = -500000;
@@ -682,8 +691,6 @@ static Entity selectBestGhost(const Entity& buster)
    return bestGhost;
 }
 
-
-
 static bool handleTrackEnnemyWithGhostSituation(Entity& myBuster)
 {
    int ennemyId = g_assignedEnnemies[myBuster.m_rank];//potentially not visible anymore
@@ -701,6 +708,7 @@ static bool handleTrackEnnemyWithGhostSituation(Entity& myBuster)
             doStun(ennemy.m_id, "Got ya");
             g_assignedEnnemies[myBuster.m_rank] = -1;//TRACK COMPLETE
             g_assignedEnnemiesTargetPos[myBuster.m_rank] = make_pair(0, 0);//USELESS
+            g_stunReloadTimes[myBuster.m_rank] = 20;
             myBuster.m_isScout = false;
             return true;
          }
@@ -814,14 +822,37 @@ static bool handleGhostHistoricSituation(Entity& myBuster)
       if (canBust(myBuster, bestGhostFromHistoric))
       {
          doBust(bestGhostFromHistoric.m_id, "They talk to me");
+         return true;
       }
-      else if (computeDistance(myBuster, bestGhostFromHistoric) <= 900)
+      int distance = computeDistance(myBuster, bestGhostFromHistoric);
+      if (distance <= 900)
       {
-         doMove(bestGhostFromHistoric.m_x - 400, bestGhostFromHistoric.m_y - 400);
+         bool solved = false;
+         int step = 800;
+         Entity updatedBuster = myBuster;
+
+         while (!solved)
+         {
+            pair<int,int> newPos = computeNewPositionIfMoveToward(myBuster, g_myBaseCoord, step);
+            updatedBuster.m_x = newPos.first;
+            updatedBuster.m_y = newPos.second;
+
+            if (canBust(updatedBuster, bestGhostFromHistoric))
+            {
+               solved = true;
+            }
+            else
+            {
+               step -= 200;
+            }
+         }
+         doMove(updatedBuster.m_x, updatedBuster.m_y, "Let's stay friends !");
+         return true;
       }
       else
       {
          doMove(bestGhostFromHistoric.m_x, bestGhostFromHistoric.m_y, "I see dead people");
+         return true;
       }
    }
    else if (!canSeeHim && computeDistance(myBuster, bestGhostFromHistoric) <= 20)
@@ -832,9 +863,8 @@ static bool handleGhostHistoricSituation(Entity& myBuster)
    else
    {
       doMove(bestGhostFromHistoric.m_x, bestGhostFromHistoric.m_y, "I foresee dead people");
+      return true;
    }
-
-   return true;
 }
 
 static bool handleGhostCloseSituation(Entity& myBuster)
@@ -908,25 +938,29 @@ static void assignScouts()
       {
          buster.m_isScout = true;
          scoutsCount++;
-
       }
    }
 }
 
-//static void assignOpeners
-//{
-//
-//}
-
 static void playOneTurn()
 {
    assignScouts();
-   //assignOpeners();
    for (int i = 0; i < g_bustersPerPlayer; i++) {
 
       // Write an action using cout. DON'T FORGET THE "<< endl"
       // To debug: cerr << "Debug messages..." << endl;
-      if (g_myBusters[i].m_isScout && g_lastResortExploration == false)
+      if (g_currentTurn < 8)
+      {
+         if (g_myBaseCoord.first == 0 && g_myBaseCoord.second == 0)
+         {
+            doMove(g_myBusters[i].m_x + 565 * 8, g_myBusters[i].m_x + 565 * 8, ":(");
+         }
+         else
+         {
+            doMove(g_myBusters[i].m_x - 565 * 8, g_myBusters[i].m_x - 565 * 8, ":(");
+         }
+      }
+      else if (g_myBusters[i].m_isScout && g_lastResortExploration == false)
       {
          scoutPlayOneTurn(g_myBusters[i]);
       }
